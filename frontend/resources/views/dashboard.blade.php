@@ -1,4 +1,8 @@
-@extends('layouts.user_type.guest')
+@php
+  dd(Auth::user());
+@endphp
+
+@extends('layouts.user_type.auth')
 
 @section('content')
 
