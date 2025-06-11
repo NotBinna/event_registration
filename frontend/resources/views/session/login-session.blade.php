@@ -71,19 +71,17 @@
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Simpan token ke localStorage (jika Node.js mengirim token)
-        if (data.token) {
-          localStorage.setItem('token', data.token);
+      if (response.ok && data.token) {
+        // Simpan token ke localStorage
+        localStorage.setItem('token', data.token);
+        // Simpan user info jika ada
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
         }
-
-        // Simpan user info kalau perlu
-        localStorage.setItem('user', JSON.stringify(data.user));
-
-        // Redirect ke dashboard Laravel
-        window.location.href = 'dashboard';
+        // Redirect ke dashboard
+        window.location.href = '/dashboard';
       } else {
-        alert(data.message || 'Login gagal');
+        alert(data.error || data.message || 'Login gagal, cek email dan password!');
       }
     } catch (error) {
       console.error('Login error:', error);

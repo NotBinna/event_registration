@@ -47,12 +47,8 @@
 </head>
 
 <body class="g-sidenav-show  bg-gray-100 {{ (\Request::is('rtl') ? 'rtl' : (Request::is('virtual-reality') ? 'virtual-reality' : '')) }} ">
-  @auth
-    @yield('auth')
-  @endauth
-  @guest
-    @yield('guest')
-  @endguest
+  @yield('auth')
+  @yield('guest')
 
   @if(session()->has('success'))
     <div x-data="{ show: true}"
@@ -62,6 +58,35 @@
       <p class="m-0">{{ session('success')}}</p>
     </div>
   @endif
+
+    <!-- Toast Container -->
+  <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999">
+    <div id="mainToast" class="toast align-items-center text-bg-primary border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="mainToastBody"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Hapus -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmDeleteLabel">Konfirmasi Hapus</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Apakah Anda yakin ingin menghapus user ini?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-danger" id="btn-confirm-delete">Hapus</button>
+        </div>
+      </div>
+    </div>
+  </div>
     <!--   Core JS Files   -->
   <script src="../assets/js/core/popper.min.js"></script>
   <script src="../assets/js/core/bootstrap.min.js"></script>
@@ -71,6 +96,33 @@
   <script src="../assets/js/plugins/chartjs.min.js"></script>
   @stack('rtl')
   @stack('dashboard')
+  <script>
+    // Fungsi global untuk handle response API
+    function handleApiResponse(response) {
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return null;
+      }
+      return response.json();
+    }
+    
+    function showToast(message, type = 'primary') {
+      const toastEl = document.getElementById('mainToast');
+      toastEl.className = `toast align-items-center text-bg-${type} border-0`;
+      document.getElementById('mainToastBody').innerText = message;
+      const toast = new bootstrap.Toast(toastEl);
+      toast.show();
+    }
+    var win = navigator.platform.indexOf('Win') > -1;
+    if (win && document.querySelector('#sidenav-scrollbar')) {
+      var options = {
+        damping: '0.5'
+      }
+      Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
+    }
+  </script>
   <script>
     var win = navigator.platform.indexOf('Win') > -1;
     if (win && document.querySelector('#sidenav-scrollbar')) {
