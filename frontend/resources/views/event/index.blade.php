@@ -24,7 +24,7 @@
                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tanggal</th>
                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Lokasi</th>
                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
-                    <th id="th-action" class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Action</th>
+                    <th id="th-action" class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="events-table-body">
@@ -150,9 +150,12 @@ function renderEvents(events) {
         </td>
         ${
           user && user.role_id == 4
-            ? `<td class="text-center">
-                <a href="javascript:;" class="mx-3" onclick="openEventModal('${event.id}')"><i class="fas fa-user-edit text-secondary"></i></a>
-                <span onclick="deleteEvent('${event.id}')"><i class="cursor-pointer fas fa-trash text-secondary"></i></span>
+            ? `<td class="text-center" style="cursor:default">
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                  <a href="javascript:;" class="btn btn-link text-dark px-3 mb-0" onclick="openEventModal('${event.id}')">
+                    <i class="fas fa-pencil-alt text-dark me-2"></i>Edit
+                  </a>
+                </div>
               </td>`
             : ''
         }
@@ -161,17 +164,16 @@ function renderEvents(events) {
   });
   document.getElementById('events-table-body').innerHTML = html;
 
-  // Event listener untuk modal detail (klik baris, kecuali tombol edit/delete)
   document.querySelectorAll('.event-row').forEach(row => {
-    row.onclick = function(e) {
-      if (
-        e.target.closest('.fa-user-edit') ||
-        e.target.closest('.fa-trash')
-      ) return;
-      const id = this.getAttribute('data-id');
+  const cells = row.querySelectorAll('td:not(:last-child)');
+  
+  cells.forEach(cell => {
+    cell.onclick = function(e) {
+      const id = row.getAttribute('data-id');
       showEventDetail(events.find(ev => ev.id == id));
     };
   });
+});
 }
 
 function formatDateForInput(dateStr) {
@@ -256,23 +258,6 @@ document.getElementById('event-form').onsubmit = function(e) {
   });
 };
 
-// Modal konfirmasi delete
-let eventIdToDelete = null;
-function deleteEvent(id) {
-  eventIdToDelete = id;
-  if (confirm('Apakah Anda yakin ingin menghapus event ini?')) {
-    fetch(`http://localhost:3000/api/events/${eventIdToDelete}`, {
-      method: 'DELETE',
-      headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
-    })
-    .then(handleApiResponse)
-    .then(() => {
-      loadEvents();
-      eventIdToDelete = null;
-    });
-  }
-}
-
 // Detail event
 function showEventDetail(event) {
   document.getElementById('event-detail-body').innerHTML = `
@@ -301,7 +286,15 @@ function loadEvents() {
   .then(handleApiResponse)
   .then(data => {
     if (!data) return;
-    renderEvents(data.events);
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    // Filter events based on user role
+    let eventsToShow = data.events;
+    if (!user || user.role_id != 4) {
+      eventsToShow = data.events.filter(event => event.is_active == 1);
+    }
+    
+    renderEvents(eventsToShow);
   });
 }
 

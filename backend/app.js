@@ -107,7 +107,8 @@ app.post('/api/login', async (req, res) => {
 // GET all roles
 app.get('/api/roles', authenticateToken, async (req, res) => {
   try {
-    const [roles] = await db.query('SELECT id, name FROM roles');
+    // Only get roles 3 (keuangan) and 4 (panitia)
+    const [roles] = await db.query('SELECT id, name FROM roles WHERE id IN (3,4)');
     res.json({ roles });
   } catch (err) {
     res.status(500).json({ error: 'Server error fetching roles.' });
@@ -120,7 +121,10 @@ app.get('/api/users', authenticateToken, async (req, res) => {
     if (req.user.role_id !== 2) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    const [users] = await db.query('SELECT id, name, email, role_id, status, created_at FROM users');
+    // Only get users with role_id 3 (keuangan) or 4 (panitia)
+    const [users] = await db.query(
+      'SELECT id, name, email, role_id, status, created_at FROM users WHERE role_id IN (3,4)'
+    );
     res.json({ users });
   } catch (err) {
     console.error('Get users error:', err.message);
@@ -147,10 +151,21 @@ app.post('/api/users', authenticateToken, async (req, res) => {
   try {
     if (req.user.role_id !== 2) return res.status(403).json({ error: 'Forbidden' });
     const { name, email, password, role_id } = req.body;
-    if (!name || !email || !password || !role_id) return res.status(400).json({ error: 'Semua field wajib diisi.' });
+    
+    // Validate role_id is either 3 or 4
+    if (role_id !== 3 && role_id !== 4) {
+      return res.status(400).json({ error: 'Invalid role. Can only add users with role 3 or 4.' });
+    }
+
+    if (!name || !email || !password || !role_id) {
+      return res.status(400).json({ error: 'Semua field wajib diisi.' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await db.query('INSERT INTO users (name, email, password, role_id) VALUES (?, ?, ?, ?)', [name, email, hashedPassword, role_id]);
+    await db.query(
+      'INSERT INTO users (name, email, password, role_id) VALUES (?, ?, ?, ?)', 
+      [name, email, hashedPassword, role_id]
+    );
     res.json({ message: 'User berhasil ditambahkan.' });
   } catch (err) {
     console.error('Add user error:', err.message);
@@ -164,6 +179,17 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     if (req.user.role_id !== 2) return res.status(403).json({ error: 'Forbidden' });
     const { name, email, password, role_id, status } = req.body;
     const { id } = req.params;
+
+    // Validate role_id is either 3 or 4
+    if (role_id !== 3 && role_id !== 4) {
+      return res.status(400).json({ error: 'Invalid role. Can only update to role 3 or 4.' });
+    }
+
+    // Check if target user has role 3 or 4
+    const [user] = await db.query('SELECT role_id FROM users WHERE id = ?', [id]);
+    if (!user.length || ![3,4].includes(user[0].role_id)) {
+      return res.status(403).json({ error: 'Can only modify users with role 3 or 4.' });
+    }
 
     let sql, params;
     if (password) {
@@ -187,6 +213,13 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
   try {
     if (req.user.role_id !== 2) return res.status(403).json({ error: 'Forbidden' });
     const { id } = req.params;
+
+    // Check if target user has role 3 or 4
+    const [user] = await db.query('SELECT role_id FROM users WHERE id = ?', [id]);
+    if (!user.length || ![3,4].includes(user[0].role_id)) {
+      return res.status(403).json({ error: 'Can only delete users with role 3 or 4.' });
+    }
+
     await db.query('DELETE FROM users WHERE id=?', [id]);
     res.json({ message: 'User berhasil dihapus.' });
   } catch (err) {
@@ -256,18 +289,6 @@ app.put('/api/events/:id', authenticateToken, upload.single('poster'), async (re
   } catch (err) {
     console.error('Edit event error:', err.message);
     res.status(500).json({ error: 'Server error updating event.' });
-  }
-});
-
-// DELETE event
-app.delete('/api/events/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    await db.query('DELETE FROM events WHERE id=?', [id]);
-    res.json({ message: 'Event berhasil dihapus.' });
-  } catch (err) {
-    console.error('Delete event error:', err.message);
-    res.status(500).json({ error: 'Server error deleting event.' });
   }
 });
 
