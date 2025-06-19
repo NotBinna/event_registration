@@ -83,10 +83,15 @@ app.post('/api/login', async (req, res) => {
     if (results.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
 
     const user = results[0];
+
+    // Check if user is inactive
+    if (user.status === 'inactive') {
+      return res.status(403).json({ error: 'Your account is inactive. Please contact administrator.' });
+    }
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // 🔐 Buat JWT Token
     const token = jwt.sign(
       { id: user.id, email: user.email, role_id: user.role_id },
       process.env.JWT_SECRET,
@@ -229,6 +234,17 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
 });
 
 // ==================== EVENT ENDPOINTS ====================
+
+// GET public events (no auth required)
+app.get('/api/public/events', async (req, res) => {
+  try {
+    const [events] = await db.query('SELECT * FROM events WHERE is_active = 1 ORDER BY date DESC');
+    res.json({ events });
+  } catch (err) {
+    console.error('Get public events error:', err.message);
+    res.status(500).json({ error: 'Server error fetching events.' });
+  }
+});
 
 // GET all events
 app.get('/api/events', authenticateToken, async (req, res) => {

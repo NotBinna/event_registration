@@ -123,6 +123,6 @@
 document.getElementById('logout-btn').onclick = function() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  window.location.href = '/login';
+  window.location.href = '/';
 };
 </script>

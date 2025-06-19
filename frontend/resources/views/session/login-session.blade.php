@@ -72,20 +72,22 @@
       const data = await response.json();
 
       if (response.ok && data.token) {
-        // Simpan token ke localStorage
         localStorage.setItem('token', data.token);
-        // Simpan user info jika ada
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
         }
-        // Redirect ke dashboard
         window.location.href = '/dashboard';
       } else {
-        alert(data.error || data.message || 'Login gagal, cek email dan password!');
+        // Show specific error message
+        if (response.status === 403) {
+          alert('Your account is inactive. Please contact administrator.');
+        } else {
+          alert(data.error || data.message || 'Login failed, check your email and password!');
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert('Terjadi kesalahan saat login');
+      alert('An error occurred during login');
     }
   });
 </script>
