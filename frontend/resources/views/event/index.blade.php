@@ -39,18 +39,18 @@
 
     <!-- Modal Detail Event -->
     <div class="modal fade" id="eventDetailModal" tabindex="-1" aria-labelledby="eventDetailLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="eventDetailLabel">Detail Event</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body" id="event-detail-body">
-            <!-- Akan diisi oleh JS -->
-          </div>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="eventDetailLabel">Detail Event</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="event-detail-body">
+          <!-- Akan diisi JS -->
         </div>
       </div>
     </div>
+  </div>
 
     <!-- Modal Tambah/Edit Event -->
     <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
@@ -109,6 +109,7 @@
             <div class="modal-footer">
               <button type="submit" class="btn btn-primary">Simpan</button>
             </div>
+            
           </div>
         </form>
       </div>
@@ -260,6 +261,8 @@ document.getElementById('event-form').onsubmit = function(e) {
 
 // Detail event
 function showEventDetail(event) {
+  const user = JSON.parse(localStorage.getItem('user'));
+
   document.getElementById('event-detail-body').innerHTML = `
     <img src="http://localhost:3000${event.poster || '/uploads/default-poster.jpg'}" class="img-fluid rounded mb-3" alt="poster">
     <h5>${event.name}</h5>
@@ -273,6 +276,13 @@ function showEventDetail(event) {
       <li><b>Max Peserta:</b> ${event.max_participants}</li>
       <li><b>Status:</b> ${event.is_active == 1 ? 'Aktif' : 'Tidak Aktif'}</li>
     </ul>
+    ${
+            user && user.role_id != 4 && event.is_active == 1
+            ? `<div class="mt-3">
+                <a href="/buy/${event.id}" class="btn btn-primary">Buy Ticket</a>
+               </div>`
+            : ''
+        }
   `;
   var modal = new bootstrap.Modal(document.getElementById('eventDetailModal'));
   modal.show();
