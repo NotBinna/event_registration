@@ -423,7 +423,7 @@ app.get('/api/my-events', authenticateToken, async (req, res) => {
     // Ambil tiket untuk setiap registration
     for (const reg of registrations) {
       const [tickets] = await db.query(
-        'SELECT id, participant_name, qr_code, scanned_at FROM ticket WHERE event_registration_id = ?',
+        'SELECT id, participant_name, qr_code, scanned_at, certificate_path FROM ticket WHERE event_registration_id = ?',
         [reg.id]
       );
       reg.tickets = tickets;

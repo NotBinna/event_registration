@@ -44,11 +44,42 @@
         </div>
       </div>
     </div>
+    <!-- Modal Sertifikat -->
+    <div class="modal fade" id="certificateModal" tabindex="-1" aria-labelledby="certificateModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="certificateModalLabel">Sertifikat Peserta</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="certificate-modal-body">
+            <!-- Sertifikat akan ditampilkan di sini -->
+          </div>
+          <div class="modal-footer">
+            <a id="download-certificate-btn" href="#" class="btn btn-success" download target="_blank">Download Sertifikat</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </main>
 
 @push('dashboard')
 <script>
+function showCertificateModal(certPath) {
+  let ext = certPath.split('.').pop().toLowerCase();
+  let html = '';
+  if (ext === 'pdf') {
+    html = `<iframe src="http://localhost:3000/${certPath}" style="width:100%;height:500px;" frameborder="0"></iframe>`;
+  } else {
+    html = `<img src="http://localhost:3000/${certPath}" class="img-fluid" alt="Sertifikat">`;
+  }
+  document.getElementById('certificate-modal-body').innerHTML = html;
+  document.getElementById('download-certificate-btn').href = `http://localhost:3000/${certPath}`;
+  var modal = new bootstrap.Modal(document.getElementById('certificateModal'));
+  modal.show();
+}
+
 function showEventDetail(event) {
   let statusHtml = '';
   if (!event.payment_id) {
@@ -78,6 +109,11 @@ function showEventDetail(event) {
               ticket.scanned_at
                 ? '<span class="badge bg-gradient-success ms-2">Sudah Scan</span>'
                 : '<span class="badge bg-gradient-secondary ms-2">Belum Scan</span>'
+            }
+            ${
+              ticket.scanned_at && ticket.certificate_path
+                ? `<button class="btn btn-sm btn-info ms-2" onclick="showCertificateModal('${ticket.certificate_path}')">Lihat Sertifikat</button>`
+                : ''
             }
           </div>
         </div>
