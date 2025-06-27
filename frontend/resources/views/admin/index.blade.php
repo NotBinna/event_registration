@@ -175,32 +175,31 @@ function loadUsers() {
 function openUserModal(id = '') {
     document.getElementById('user-form').reset();
     document.getElementById('user-id').value = id || '';
-    if (id) {
-        // Edit mode: fetch user data
-        fetch(`http://localhost:3000/api/users/${id}`, {
-            headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
-        })
-        .then(res => res.json())
-        .then(user => {
-            loadRoles().then(() => {
-                document.getElementById('user-name').value = user.name;
-                document.getElementById('user-email').value = user.email;
-                document.getElementById('user-role').value = user.role_id;
-                document.getElementById('user-status').value = user.status;
+    // Pastikan roles sudah dimuat sebelum fetch user (edit)
+    loadRoles().then(() => {
+        if (id) {
+            // Edit mode: fetch user data
+            fetch(`http://localhost:3000/api/users/${id}`, {
+                headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+            })
+            .then(res => res.json())
+            .then(data => {
+                const user = data.user || data;
+                document.getElementById('user-name').value = user.name || '';
+                document.getElementById('user-email').value = user.email || '';
+                document.getElementById('user-role').value = user.role_id || '';
+                document.getElementById('user-status').value = user.status || '';
+                document.getElementById('userModalLabel').innerText = 'Edit User';
+                var modal = new bootstrap.Modal(document.getElementById('userModal'));
+                modal.show();
             });
-        });
-        document.getElementById('userModalLabel').innerText = 'Edit User';
-    } else {
-        // Tambah user: pastikan roles sudah dimuat sebelum show modal
-        loadRoles().then(() => {
+        } else {
+            // Tambah user
             document.getElementById('userModalLabel').innerText = 'Tambah User';
             var modal = new bootstrap.Modal(document.getElementById('userModal'));
             modal.show();
-        });
-        return; // agar modal tidak double show
-    }
-    var modal = new bootstrap.Modal(document.getElementById('userModal'));
-    modal.show();
+        }
+    });
 }
 
 function saveUser() {

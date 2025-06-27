@@ -71,27 +71,30 @@ function renderTicketDetail(ticket) {
 }
 
 function scanSuccess(decodedText, decodedResult) {
-  // Matikan scanner sementara
-  html5QrCode.stop().then(() => {
-    // Kirim ke backend untuk verifikasi dan update scanned_at, scanned_by
-    fetch('http://localhost:3000/api/scan-ticket', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + localStorage.getItem('token')
-      },
-      body: JSON.stringify({ qr_code: decodedText })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        showResult('Tiket valid dan berhasil di-scan!' + renderTicketDetail(data.ticket) + '<br><button class="btn btn-primary mt-2" onclick="restartScan()">SCAN</button>');
-      } else {
-        showResult((data.error || 'Tiket tidak valid atau sudah pernah di-scan!'), true);
-      }
-    })
-    .catch(() => showResult('Terjadi kesalahan saat verifikasi tiket.', true));
-  });
+  // Cegah scan QR yang sama berulang-ulang
+  if (window.lastScanned === decodedText) return;
+  window.lastScanned = decodedText;
+
+  // Proses hasil scan
+  fetch('http://localhost:3000/api/scan-ticket', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('token')
+    },
+    body: JSON.stringify({ qr_code: decodedText })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showResult('Tiket valid dan berhasil di-scan!' + renderTicketDetail(data.ticket));
+    } else {
+      showResult((data.error || 'Tiket tidak valid atau sudah pernah di-scan!'), true);
+    }
+    // Reset lastScanned setelah beberapa detik agar bisa scan QR yang sama lagi jika perlu
+    setTimeout(() => { window.lastScanned = null; }, 2000);
+  })
+  .catch(() => showResult('Terjadi kesalahan saat verifikasi tiket.', true));
 }
 
 function startScanner(cameraId) {
@@ -113,7 +116,20 @@ function startScanner(cameraId) {
 }
 
 function restartScan() {
-  startScanner(selectedCameraId);
+  document.getElementById('scan-result').innerHTML = '';
+  document.getElementById('qr-reader').innerHTML = '';
+  if (html5QrCode) {
+    try { html5QrCode.clear(); } catch (e) {}
+    try { html5QrCode.stop(); } catch (e) {}
+    html5QrCode = null;
+  }
+  html5QrCode = new Html5Qrcode("qr-reader");
+  html5QrCode.start(
+    selectedCameraId,
+    { fps: 10, qrbox: 250 },
+    scanSuccess,
+    errorMessage => {}
+  );
 }
 
 function stopScanner() {

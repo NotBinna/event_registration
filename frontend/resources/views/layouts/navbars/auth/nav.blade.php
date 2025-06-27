@@ -12,7 +12,7 @@
                 <li class="nav-item dropdown d-flex align-items-center">
                     <a href="#" class="nav-link dropdown-toggle text-body font-weight-bold px-0" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa fa-user me-sm-1"></i>
-                        <span id="user-name" class="d-sm-inline d-none"></span>
+                        <span id="navbar-user-name" class="d-sm-inline d-none"></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
                         <li>
@@ -32,9 +32,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tampilkan nama user
     const user = JSON.parse(localStorage.getItem('user'));
     if (user && user.name) {
-        document.getElementById('user-name').textContent = user.name;
+        document.getElementById('navbar-user-name').textContent = user.name;
     } else {
-        document.getElementById('user-name').textContent = 'Profile';
+        document.getElementById('navbar-user-name').textContent = 'Profile';
     }
 
     // Logout
