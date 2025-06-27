@@ -1,3 +1,4 @@
+const role = require('./middleware/role');
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -136,7 +137,7 @@ app.get('/api/roles', authenticateToken, async (req, res) => {
 });
 
 // GET all users (admin only)
-app.get('/api/users', authenticateToken, async (req, res) => {
+app.get('/api/users', authenticateToken, role(2), async (req, res) => {
   try {
     if (req.user.role_id !== 2) {
       return res.status(403).json({ error: 'Forbidden' });
@@ -153,7 +154,7 @@ app.get('/api/users', authenticateToken, async (req, res) => {
 });
 
 // GET user by id (admin only)
-app.get('/api/users/:id', authenticateToken, async (req, res) => {
+app.get('/api/users/:id', authenticateToken, role(2), async (req, res) => {
   try {
     if (req.user.role_id !== 2) return res.status(403).json({ error: 'Forbidden' });
     const { id } = req.params;
@@ -167,7 +168,7 @@ app.get('/api/users/:id', authenticateToken, async (req, res) => {
 });
 
 // ADD user (admin only)
-app.post('/api/users', authenticateToken, async (req, res) => {
+app.post('/api/users', authenticateToken, role(2), async (req, res) => {
   try {
     if (req.user.role_id !== 2) return res.status(403).json({ error: 'Forbidden' });
     const { name, email, password, role_id } = req.body;
@@ -194,7 +195,7 @@ app.post('/api/users', authenticateToken, async (req, res) => {
 });
 
 // EDIT user (admin only)
-app.put('/api/users/:id', authenticateToken, async (req, res) => {
+app.put('/api/users/:id', authenticateToken, role(2), async (req, res) => {
   try {
     if (req.user.role_id !== 2) return res.status(403).json({ error: 'Forbidden' });
     const { name, email, password, role_id, status } = req.body;
@@ -228,26 +229,6 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE user (admin only)
-app.delete('/api/users/:id', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.role_id !== 2) return res.status(403).json({ error: 'Forbidden' });
-    const { id } = req.params;
-
-    // Check if target user has role 3 or 4
-    const [user] = await db.query('SELECT role_id FROM users WHERE id = ?', [id]);
-    if (!user.length || ![3,4].includes(user[0].role_id)) {
-      return res.status(403).json({ error: 'Can only delete users with role 3 or 4.' });
-    }
-
-    await db.query('DELETE FROM users WHERE id=?', [id]);
-    res.json({ message: 'User berhasil dihapus.' });
-  } catch (err) {
-    console.error('Delete user error:', err.message);
-    res.status(500).json({ error: 'Server error deleting user.' });
-  }
-});
-
 // ==================== EVENT ENDPOINTS ====================
 
 // GET public events (no auth required)
@@ -278,6 +259,12 @@ app.get('/api/events/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const [events] = await db.query('SELECT * FROM events WHERE id=?', [id]);
     if (!events.length) return res.status(404).json({ error: 'Event tidak ditemukan.' });
+
+    // Tambahkan pengecekan is_active
+    if (events[0].is_active != 1) {
+      return res.status(403).json({ error: 'Event tidak aktif.' });
+    }
+
     res.json(events[0]);
   } catch (err) {
     console.error('Get event by id error:', err.message);
@@ -286,7 +273,7 @@ app.get('/api/events/:id', authenticateToken, async (req, res) => {
 });
 
 // ADD event
-app.post('/api/events', authenticateToken, upload.single('poster'), async (req, res) => {
+app.post('/api/events', authenticateToken, role(4), upload.single('poster'), async (req, res) => {
   try {
     const { name, description, date, time, location, speaker, price, max_participants, is_active, created_by } = req.body;
     const posterPath = req.file ? '/uploads/' + req.file.filename : null;
@@ -302,7 +289,7 @@ app.post('/api/events', authenticateToken, upload.single('poster'), async (req, 
 });
 
 // EDIT event
-app.put('/api/events/:id', authenticateToken, upload.single('poster'), async (req, res) => {
+app.put('/api/events/:id', authenticateToken, role(4), upload.single('poster'), async (req, res) => {
   try {
     const { name, description, date, time, location, speaker, price, max_participants, is_active } = req.body;
     const { id } = req.params;
@@ -395,7 +382,10 @@ app.get('/api/events/:id/available-tickets', authenticateToken, async (req, res)
 
     // Get sum of tickets already sold
     const [sold] = await db.query(
-      'SELECT COALESCE(SUM(total_tickets), 0) as sold_tickets FROM event_registration WHERE event_id = ?',
+      `SELECT COALESCE(SUM(r.total_tickets), 0) as sold_tickets
+      FROM event_registration r
+      LEFT JOIN payments p ON r.payment_id = p.id
+      WHERE r.event_id = ? AND p.status = 'verified'`,
       [req.params.id]
     );
 
@@ -488,7 +478,7 @@ app.get('/api/registration/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/finance/approvals', authenticateToken, async (req, res) => {
+app.get('/api/finance/approvals', authenticateToken, role(3), async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT r.users_id, u.name as user_name, r.registered_at, r.total_tickets, e.name, e.date, e.location, p.id as payment_id, p.proof_path, p.status as payment_status
@@ -505,7 +495,7 @@ app.get('/api/finance/approvals', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/finance/approve', authenticateToken, async (req, res) => {
+app.post('/api/finance/approve', authenticateToken, role(3), async (req, res) => {
   try {
     const { payment_id, status } = req.body;
     // status: 'verified' atau 'rejected'
@@ -519,7 +509,7 @@ app.post('/api/finance/approve', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/scan-ticket', authenticateToken, async (req, res) => {
+app.post('/api/scan-ticket', authenticateToken, role(4), async (req, res) => {
   const { qr_code } = req.body;
   try {
     // Cari tiket berdasarkan qr_value
@@ -557,7 +547,7 @@ app.post('/api/scan-ticket', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/tickets/:id/certificate', authenticateToken, certificateUpload.single('certificate'), async (req, res) => {
+app.post('/api/tickets/:id/certificate', authenticateToken, role(4), certificateUpload.single('certificate'), async (req, res) => {
   try {
     const ticketId = req.params.id;
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -571,7 +561,7 @@ app.post('/api/tickets/:id/certificate', authenticateToken, certificateUpload.si
   }
 });
 
-app.get('/api/all-tickets', authenticateToken, async (req, res) => {
+app.get('/api/all-tickets', authenticateToken, role(4), async (req, res) => {
   try {
     // Hanya panitia (role_id 4) yang boleh akses
     // if (req.user.role_id !== 4) return res.status(403).json({ error: 'Forbidden' });

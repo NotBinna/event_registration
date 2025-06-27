@@ -12,7 +12,6 @@
                 </div>
             </div>
         </div>
-        @yield('content')        
-        @include('layouts.footers.guest.footer')
+        @yield('content')
     @endif
 @endsection

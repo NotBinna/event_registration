@@ -3,7 +3,7 @@
 @section('content')
 <main class="main-content position-relative max-height-vh-100 h-100 mt-1 border-radius-lg ">
   <div class="container-fluid py-4">
-    <div class="row">
+    <div class="row" id="not-for-you" style="display:none;">
       <div class="col-12">
         <div class="card mb-4">
           <div class="card-header pb-0">
@@ -34,6 +34,21 @@
 </main>
 
 @push('dashboard')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user || String(user.role_id) !== "4") {
+        var modal = new bootstrap.Modal(document.getElementById('aksesDitolakModal'));
+        modal.show();
+        document.getElementById('btn-akses-ditolak-ok').onclick = function() {
+            window.location.href = '/dashboard';
+        };
+        document.body.style.overflow = 'hidden';
+        throw new Error('Akses ditolak');
+    }
+    document.getElementById('not-for-you').style.display = '';
+});
+</script>
 <script>
 // Ganti URL sesuai endpoint backend Anda
 function loadTickets() {

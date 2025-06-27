@@ -1,18 +1,3 @@
-<!--
-=========================================================
-* Soft UI Dashboard - v1.0.3
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/soft-ui-dashboard
-* Copyright 2021 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://www.creative-tim.com/license)
-
-* Coded by Creative Tim
-
-=========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
--->
 <!DOCTYPE html>
 
 @if (\Request::is('rtl'))
@@ -32,7 +17,7 @@
   <link rel="apple-touch-icon" sizes="76x76" href="../assets/img/apple-icon.png">
   <link rel="icon" type="image/png" href="../assets/img/favicon.png">
   <title>
-    Soft UI Dashboard by Creative Tim
+    Ventela Events Manager
   </title>
   <!--     Fonts and icons     -->
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
@@ -79,20 +64,18 @@
     </div>
   </div>
 
-  <!-- Modal Konfirmasi Hapus -->
-  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+  <!-- Modal Akses Ditolak Global -->
+  <div class="modal fade" id="aksesDitolakModal" tabindex="-1" aria-labelledby="aksesDitolakLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="confirmDeleteLabel">Konfirmasi Hapus</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="aksesDitolakLabel">Akses Ditolak</h5>
         </div>
         <div class="modal-body">
-          Apakah Anda yakin ingin menghapus user ini?
+          Anda tidak memiliki akses ke halaman ini.
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-danger" id="btn-confirm-delete">Hapus</button>
+          <button type="button" class="btn btn-danger" id="btn-akses-ditolak-ok">OK</button>
         </div>
       </div>
     </div>
@@ -118,12 +101,13 @@
       return response.json();
     }
     
-    function showToast(message, type = 'primary') {
-      const toastEl = document.getElementById('mainToast');
-      toastEl.className = `toast align-items-center text-bg-${type} border-0`;
-      document.getElementById('mainToastBody').innerText = message;
-      const toast = new bootstrap.Toast(toastEl);
-      toast.show();
+    function showToast(message, type = 'danger') {
+        const toast = document.getElementById('mainToast');
+        const toastBody = document.getElementById('mainToastBody');
+        toastBody.textContent = message;
+        toast.className = `toast align-items-center bg-${type} text-white border-0`; // type: 'danger', 'success', etc
+        var bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
     }
     var win = navigator.platform.indexOf('Win') > -1;
     if (win && document.querySelector('#sidenav-scrollbar')) {

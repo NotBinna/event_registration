@@ -17,6 +17,7 @@
             </div>
           </div>
           <div class="card-body">
+            <div id="participant-alert" class="alert alert-danger d-none" role="alert"></div>
             <div id="content" style="display: none;">
               <div class="row">
                 <div class="col-md-6">
@@ -152,8 +153,14 @@ function loadEventDetails() {
             </div>
         `;
         
-        document.getElementById('max-tickets').textContent = data.max_participants;
-        document.getElementById('total_tickets').max = data.max_participants;
+        fetch(`http://localhost:3000/api/events/${eventId}/available-tickets`, {
+            headers: { Authorization: 'Bearer ' + token }
+        })
+        .then(res => res.json())
+        .then(ticketData => {
+            document.getElementById('max-tickets').textContent = ticketData.available;
+            document.getElementById('total_tickets').max = ticketData.available;
+        });
         document.getElementById('total-price').textContent = initialTotal;
 
         // Render initial participant name input(s)
@@ -186,6 +193,11 @@ document.getElementById('ticket-form').addEventListener('submit', function(e) {
     const token = localStorage.getItem('token');
     const participantInputs = document.querySelectorAll('input[name="participant_names[]"]');
     const participant_names = Array.from(participantInputs).map(input => input.value);
+
+    if (participant_names.some(name => name === "")) {
+        showToast("Semua nama peserta wajib diisi!", "danger");
+        return;
+    }
 
     fetch('http://localhost:3000/api/registrations', {
         method: 'POST',

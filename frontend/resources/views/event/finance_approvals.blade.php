@@ -2,7 +2,7 @@
 
 @section('content')
 <main class="main-content position-relative max-height-vh-100 h-100 mt-1 border-radius-lg ">
-  <div class="container-fluid py-4">
+  <div class="container-fluid py-4" id="not-for-you" style="display:none;">
     <div class="row">
       <div class="col-12">
         <div class="card mb-4">
@@ -50,6 +50,21 @@
 </main>
 
 @push('dashboard')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user || String(user.role_id) !== "3") {
+        var modal = new bootstrap.Modal(document.getElementById('aksesDitolakModal'));
+        modal.show();
+        document.getElementById('btn-akses-ditolak-ok').onclick = function() {
+            window.location.href = '/dashboard';
+        };
+        document.body.style.overflow = 'hidden';
+        throw new Error('Akses ditolak');
+    }
+    document.getElementById('not-for-you').style.display = '';
+});
+</script>
 <script>
 function showProofModal(imgUrl) {
   document.getElementById('proof-image').src = imgUrl;

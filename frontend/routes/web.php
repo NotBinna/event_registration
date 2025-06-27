@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
+// Home & umum
 Route::get('/', function () {
     return view('home');
 })->name('home');
@@ -26,6 +27,18 @@ Route::get('/admin/users', function () {
     return view('admin.index');
 })->name('admin.users');
 
+Route::get('/finance/approvals', function () {
+    return view('event.finance_approvals');
+})->name('finance.approvals');
+
+Route::get('/scan-ticket', function () {
+    return view('event.scan_ticket');
+})->name('scan-ticket');
+
+Route::get('/manage-tickets', function () {
+    return view('event.manage_tickets');
+})->name('manage-tickets');
+
 Route::get('/event', function () {
     return view('event.index');
 })->name('event.index');
@@ -49,15 +62,3 @@ Route::get('/my-events', function () {
 Route::get('/payment-page', function () {
     return view('event.payment');
 })->name('payment.page');
-
-Route::get('/finance/approvals', function () {
-    return view('event.finance_approvals');
-})->name('finance.approvals');
-
-Route::get('/scan-ticket', function () {
-    return view('event.scan_ticket');
-})->name('scan-ticket');
-
-Route::get('/manage-tickets', function () {
-    return view('event.manage_tickets');
-})->name('manage-tickets');

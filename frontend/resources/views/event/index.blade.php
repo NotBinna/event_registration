@@ -263,29 +263,41 @@ document.getElementById('event-form').onsubmit = function(e) {
 function showEventDetail(event) {
   const user = JSON.parse(localStorage.getItem('user'));
 
-  document.getElementById('event-detail-body').innerHTML = `
-    <img src="http://localhost:3000${event.poster || '/uploads/default-poster.jpg'}" class="img-fluid rounded mb-3" alt="poster">
-    <h5>${event.name}</h5>
-    <p>${event.description}</p>
-    <ul class="list-unstyled mb-0">
-      <li><b>Tanggal:</b> ${event.date}</li>
-      <li><b>Waktu:</b> ${event.time}</li>
-      <li><b>Lokasi:</b> ${event.location}</li>
-      <li><b>Pemateri:</b> ${event.speaker}</li>
-      <li><b>Harga:</b> Rp${event.price}</li>
-      <li><b>Max Peserta:</b> ${event.max_participants}</li>
-      <li><b>Status:</b> ${event.is_active == 1 ? 'Aktif' : 'Tidak Aktif'}</li>
-    </ul>
-    ${
-            user && user.role_id != 4 && event.is_active == 1
-            ? `<div class="mt-3">
-                <a href="/buy/${event.id}" class="btn btn-primary">Buy Ticket</a>
-               </div>`
-            : ''
-        }
-  `;
-  var modal = new bootstrap.Modal(document.getElementById('eventDetailModal'));
-  modal.show();
+  // Ambil sisa tiket dari backend
+  fetch(`http://localhost:3000/api/events/${event.id}/available-tickets`, {
+    headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+  })
+  .then(res => res.json())
+  .then(ticketData => {
+    let btnBuy = '';
+    if (user && user.role_id != 4 && event.is_active == 1) {
+      if (ticketData.available <= 0) {
+        btnBuy = `<button class="btn btn-secondary" disabled>Ticket Sold Out</button>`;
+      } else {
+        btnBuy = `<a href="/buy/${event.id}" class="btn btn-primary">Buy Ticket</a>`;
+      }
+    }
+
+    document.getElementById('event-detail-body').innerHTML = `
+      <img src="http://localhost:3000${event.poster || '/uploads/default-poster.jpg'}" class="img-fluid rounded mb-3" alt="poster">
+      <h5>${event.name}</h5>
+      <p>${event.description}</p>
+      <ul class="list-unstyled mb-0">
+        <li><b>Tanggal:</b> ${event.date}</li>
+        <li><b>Waktu:</b> ${event.time}</li>
+        <li><b>Lokasi:</b> ${event.location}</li>
+        <li><b>Pemateri:</b> ${event.speaker}</li>
+        <li><b>Harga:</b> Rp${event.price}</li>
+        <li><b>Status:</b> ${event.is_active == 1 ? 'Aktif' : 'Tidak Aktif'}</li>
+        <li><b>Sisa Tiket:</b> ${ticketData.available}</li>
+      </ul>
+      <div class="mt-3">
+        ${btnBuy}
+      </div>
+    `;
+    var modal = new bootstrap.Modal(document.getElementById('eventDetailModal'));
+    modal.show();
+  });
 }
 
 // Load events dari backend

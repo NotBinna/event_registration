@@ -2,7 +2,7 @@
 
 @section('content')
 
-<div>
+<div id="not-for-you" style="display:none;">
     <div class="row">
         <div class="col-12">
             <div class="card mb-4 mx-4">
@@ -88,13 +88,23 @@
 
 @push('dashboard')
 <script>
-window.onload = function() {
+document.addEventListener('DOMContentLoaded', function() {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role_id !== 2) {
-        alert('Anda tidak memiliki akses ke halaman ini.');
-        window.location.href = '/dashboard'; // redirect ke halaman lain
-        return;
+    if (!user || String(user.role_id) !== "2") {
+        var modal = new bootstrap.Modal(document.getElementById('aksesDitolakModal'));
+        modal.show();
+        document.getElementById('btn-akses-ditolak-ok').onclick = function() {
+            window.location.href = '/dashboard';
+        };
+        document.body.style.overflow = 'hidden';
+        throw new Error('Akses ditolak');
     }
+    document.getElementById('not-for-you').style.display = '';
+});
+</script>
+<script>
+let rolesMap = {};
+window.onload = function() {
     loadRoles();
     loadUsers();
 
@@ -115,7 +125,9 @@ function loadRoles() {
     .then(res => res.json())
     .then(data => {
         let html = '';
+        rolesMap = {};
         data.roles.forEach(role => {
+            rolesMap[role.id] = role.name;
             html += `<option value="${role.id}">${role.name}</option>`;
         });
         document.getElementById('user-role').innerHTML = html;
@@ -128,8 +140,19 @@ function loadUsers() {
     })
     .then(res => res.json())
     .then(data => {
+        // Filter hanya user dengan role_id 3 dan 4
+        let keuangan = data.users.filter(u => u.role_id === 3);
+        let panitia = data.users.filter(u => u.role_id === 4);
+
+        // Urutkan masing-masing berdasarkan nama
+        keuangan.sort((a, b) => a.name.localeCompare(b.name));
+        panitia.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Gabungkan: role 3 (keuangan) di atas, role 4 (panitia) di bawah
+        let users = keuangan.concat(panitia);
+
         let html = '';
-        data.users.forEach((user, i) => {
+        users.forEach((user, i) => {
             let statusBadge = user.status === 'active'
                 ? `<span class="badge badge-sm bg-gradient-success">Active</span>`
                 : `<span class="badge badge-sm bg-gradient-secondary">Inactive</span>`;
@@ -137,12 +160,11 @@ function loadUsers() {
                 <td class="ps-4"><p class="text-xs font-weight-bold mb-0">${i+1}</p></td>
                 <td class="text-center"><p class="text-xs font-weight-bold mb-0">${user.name}</p></td>
                 <td class="text-center"><p class="text-xs font-weight-bold mb-0">${user.email}</p></td>
-                <td class="text-center"><p class="text-xs font-weight-bold mb-0">${user.role_id}</p></td>
+                <td class="text-center"><p class="text-xs font-weight-bold mb-0">${rolesMap[user.role_id] || user.role_id}</p></td>
                 <td class="text-center">${statusBadge}</td>
                 <td class="text-center"><span class="text-secondary text-xs font-weight-bold">${user.created_at || '-'}</span></td>
                 <td class="text-center">
                     <a href="javascript:;" class="mx-3" onclick="openUserModal('${user.id}')"><i class="fas fa-user-edit text-secondary"></i></a>
-                    <span onclick="deleteUser('${user.id}')"><i class="cursor-pointer fas fa-trash text-secondary"></i></span>
                 </td>
             </tr>`;
         });
@@ -211,28 +233,5 @@ function saveUser() {
         loadUsers();
     });
 }
-
-let userIdToDelete = null;
-
-function deleteUser(id) {
-    userIdToDelete = id;
-    var modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-    modal.show();
-}
-
-document.getElementById('btn-confirm-delete').onclick = function() {
-    if (!userIdToDelete) return;
-    fetch(`http://localhost:3000/api/users/${userIdToDelete}`, {
-        method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
-    })
-    .then(res => res.json())
-    .then(() => {
-        userIdToDelete = null;
-        var modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
-        modal.hide();
-        loadUsers();
-    });
-};
 </script>
 @endpush

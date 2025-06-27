@@ -4,7 +4,7 @@
 <main class="main-content position-relative max-height-vh-100 h-100 mt-1 border-radius-lg ">
   <div class="container py-4">
     <div class="row">
-      <div class="col-lg-8 mx-auto">
+      <div class="col-lg-8 mx-auto" id="scan-content" style="display:none;">
         <div class="card">
           <div class="card-header pb-0">
             <h5 class="mb-0">Scan Tiket QR Code</h5>
@@ -24,9 +24,25 @@
 </main>
 
 @push('dashboard')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user || String(user.role_id) !== "4") {
+        var modal = new bootstrap.Modal(document.getElementById('aksesDitolakModal'));
+        modal.show();
+        document.getElementById('btn-akses-ditolak-ok').onclick = function() {
+            window.location.href = '/dashboard';
+        };
+        document.body.style.overflow = 'hidden';
+        throw new Error('Akses ditolak');
+    }
+    document.getElementById('scan-content').style.display = '';
+});
+</script>
 <!-- Tambahkan library html5-qrcode -->
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
+  
 let html5QrCode;
 let cameras = [];
 let selectedCameraId = null;
@@ -52,11 +68,6 @@ function renderTicketDetail(ticket) {
       </div>
     </div>
   `;
-}
-
-function restartScan() {
-  document.getElementById('scan-result').innerHTML = '';
-  startScanner(selectedCameraId);
 }
 
 function scanSuccess(decodedText, decodedResult) {
@@ -85,6 +96,13 @@ function scanSuccess(decodedText, decodedResult) {
 
 function startScanner(cameraId) {
   selectedCameraId = cameraId;
+  document.getElementById('scan-result').innerHTML = '';
+  document.getElementById('qr-reader').innerHTML = '';
+  if (html5QrCode) {
+    try { html5QrCode.clear(); } catch (e) {}
+    try { html5QrCode.stop(); } catch (e) {}
+    html5QrCode = null;
+  }
   html5QrCode = new Html5Qrcode("qr-reader");
   html5QrCode.start(
     cameraId,
@@ -94,8 +112,14 @@ function startScanner(cameraId) {
   );
 }
 
+function restartScan() {
+  startScanner(selectedCameraId);
+}
+
 function stopScanner() {
-  if (html5QrCode) html5QrCode.stop();
+  if (html5QrCode && html5QrCode._isScanning) {
+    html5QrCode.stop().catch(() => {});
+  }
 }
 
 window.onload = function() {
@@ -114,9 +138,16 @@ window.onload = function() {
       select.value = devices[0].id;
     }
     select.onchange = function() {
-      stopScanner();
+    if (html5QrCode && html5QrCode._isScanning) {
+      html5QrCode.stop().then(() => {
+        startScanner(this.value);
+      }).catch(() => {
+        startScanner(this.value);
+      });
+    } else {
       startScanner(this.value);
-    };
+    }
+  };
   });
 };
 </script>
